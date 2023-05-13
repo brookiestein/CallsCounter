@@ -42,15 +42,15 @@
      </font>
     </property>
     <property name="text">
-     <string>Usuario:</string>
+     <string>User:</string>
     </property>
    </widget>
    <widget class="QLabel" name="messageLabel">
     <property name="geometry">
      <rect>
-      <x>160</x>
-      <y>100</y>
-      <width>221</width>
+      <x>180</x>
+      <y>80</y>
+      <width>261</width>
       <height>31</height>
      </rect>
     </property>
@@ -60,41 +60,47 @@
      </font>
     </property>
     <property name="text">
-     <string>Has registrado 50 llamadas.</string>
+     <string>You've registered 50 calls.</string>
     </property>
    </widget>
    <widget class="QPushButton" name="newButton">
     <property name="geometry">
      <rect>
-      <x>270</x>
-      <y>140</y>
+      <x>190</x>
+      <y>120</y>
       <width>80</width>
       <height>24</height>
      </rect>
     </property>
+    <property name="toolTip">
+     <string>CTRL + A</string>
+    </property>
     <property name="text">
-     <string>Nueva</string>
+     <string>Add</string>
     </property>
    </widget>
    <widget class="QPushButton" name="saveButton">
     <property name="geometry">
      <rect>
       <x>460</x>
-      <y>240</y>
+      <y>220</y>
       <width>80</width>
       <height>24</height>
      </rect>
     </property>
+    <property name="toolTip">
+     <string>CTRL + S</string>
+    </property>
     <property name="text">
-     <string>Guardar</string>
+     <string>Save</string>
     </property>
    </widget>
    <widget class="QLabel" name="datetimeLabel">
     <property name="geometry">
      <rect>
-      <x>440</x>
+      <x>390</x>
       <y>0</y>
-      <width>111</width>
+      <width>161</width>
       <height>31</height>
      </rect>
     </property>
@@ -108,6 +114,56 @@
      <string>Fecha:</string>
     </property>
    </widget>
+   <widget class="QLabel" name="remainingTimeLabel">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>215</y>
+      <width>231</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="removeButton">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>120</y>
+      <width>80</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>CTRL + R</string>
+    </property>
+    <property name="text">
+     <string>Remove</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="screenshotButton">
+    <property name="geometry">
+     <rect>
+      <x>310</x>
+      <y>220</y>
+      <width>131</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>CTRL + P</string>
+    </property>
+    <property name="text">
+     <string>Screenshot</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -118,8 +174,20 @@
      <height>21</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuAyuda">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuAyuda"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>
