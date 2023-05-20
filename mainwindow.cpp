@@ -9,6 +9,9 @@ MainWindow::MainWindow(QWidget *parent)
     , m_lock(false)
 {
     m_ui->setupUi(this);
+    m_ui->lastSavedLabel->setText("");
+    m_ui->lastCallLabel->setText("");
+    m_ui->currentBarSetValue->setText("");
 
     connect(&m_db, &Database::error, this, &MainWindow::error);
     connect(m_ui->actionAbout, &QAction::triggered, this, &MainWindow::about);
@@ -18,7 +21,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(&m_saverTimer, &QTimer::timeout, this, &MainWindow::saveCalls);
     connect(&m_saverTimer1s, &QTimer::timeout, this, &MainWindow::setRemainingTimeLabel);
     connect(&m_datetimeTimer, &QTimer::timeout, this, &MainWindow::setDateTime);
-    connect(m_ui->screenshotButton, &QPushButton::clicked, this, &MainWindow::saveScreenShot);
     connect(&m_lockerTimer, &QTimer::timeout, this, &MainWindow::unlockNewButton);
 
     m_username = qgetenv("USER");
@@ -26,10 +28,18 @@ MainWindow::MainWindow(QWidget *parent)
         m_username = qgetenv("USERNAME");
     m_ui->usernameLabel->setText(tr("User: ") + m_username);
 
+    m_chart = new Chart(m_db, m_username, m_ui->centralwidget);
+    m_chart->setGeometry(QRect(280, 30, 675, 381));
+    connect(m_chart, &Chart::updateHoveredLabel, this, &MainWindow::updateHoveredLabel);
+
     setDateTime();
     setTodaysCalls();
 
-    m_lockerTimer.setInterval(5'000);
+#ifdef QT_DEBUG
+    m_lockerTimer.setInterval(500);
+#else
+    m_lockerTimer.setInterval(3'000);
+#endif
     m_saverTimer.setInterval(300'000); // 5 minutes.
     m_saverTimer1s.setInterval(1'000);
     m_datetimeTimer.setInterval(1'000);
@@ -39,7 +49,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_ui->newButton->setShortcut(Qt::CTRL | Qt::Key_A);
     m_ui->removeButton->setShortcut(Qt::CTRL | Qt::Key_R);
-    m_ui->screenshotButton->setShortcut(Qt::CTRL | Qt::Key_P);
     m_ui->saveButton->setShortcut(Qt::CTRL | Qt::Key_S);
 }
 
@@ -48,17 +57,24 @@ MainWindow::~MainWindow()
     delete m_ui;
 }
 
-void MainWindow::setLabel()
+void MainWindow::setLabel(bool justMessageLabel, const QString& prefix = "")
 {
     m_ui->messageLabel->setText(tr("You've registered %1 %2 today.")
                                     .arg(QString::number(m_calls), m_calls == 1 ? tr("call") : tr("calls")));
+
+    if (not justMessageLabel) {
+        auto time { QDateTime::currentDateTime().toString("hh:mm:ss") };
+        m_ui->lastCallLabel->setText(tr("%1 call at %2").arg(prefix, time));
+    }
 }
 
 void MainWindow::setDateTime()
 {
-    m_datetime = QDateTime::currentDateTime().toString("dd-MM-yyyy");
-    auto time = QDateTime::currentDateTime().toString("hh:mm:ss");
-    m_ui->datetimeLabel->setText(tr("Date: %1 %2").arg(m_datetime, time));
+    auto dt { QDateTime::currentDateTime() };
+    auto day { dt.toString("ddd") };
+    m_datetime = dt.toString("dd-MM-yyyy");
+    auto time = dt.toString("hh:mm:ss");
+    m_ui->datetimeLabel->setText(tr("Date: %1, %2 %3").arg(day, m_datetime, time));
 }
 
 void MainWindow::setTodaysCalls()
@@ -69,7 +85,7 @@ void MainWindow::setTodaysCalls()
     // If there aren't any, we'll get 'not positioned on a valid record' error message, so to avoid this:
     if (not shouldUpdate()) {
         m_db.close();
-        setLabel();
+        setLabel(true);
         return;
     }
 
@@ -84,14 +100,16 @@ void MainWindow::setTodaysCalls()
     m_calls = m_db.value(index).toInt();
     if (m_calls == -1)
         m_calls = 0;
+    else
+        m_chart->setValue(dayOfWeek(), m_calls);
 
-    setLabel();
+    setLabel(true);
     m_db.close();
 }
 
 void MainWindow::error(const QString& message)
 {
-    QMessageBox::critical(this, "Error", message);
+    QMessageBox::critical(this, PROGRAM_NAME, message);
 }
 
 bool MainWindow::shouldUpdate()
@@ -106,6 +124,12 @@ bool MainWindow::shouldUpdate()
     if (fields == 0)
         return false;
     return true;
+}
+
+int MainWindow::dayOfWeek()
+{
+    QDate date { QDate::currentDate() };
+    return date.dayOfWeek();
 }
 
 void MainWindow::about(bool checked)
@@ -130,7 +154,7 @@ void MainWindow::unlockNewButton()
 void MainWindow::newCall()
 {
     if (m_lock) {
-        QMessageBox::warning(this, tr("Warning"), tr("You have to wait a couple of secs to register a new call."));
+        QMessageBox::warning(this, PROGRAM_NAME, tr("You have to wait a couple of secs to register a new call."));
         return;
     } else {
         m_lock = true;
@@ -138,13 +162,14 @@ void MainWindow::newCall()
     }
 
     ++m_calls;
-    setLabel();
+    setLabel(false, "Last registered");
+    m_chart->setValue(dayOfWeek() - 1, m_calls);
 }
 
 void MainWindow::removeCall()
 {
     if (m_lock) {
-        QMessageBox::warning(this, tr("Warning"), tr("You have to wait a couple of secs to remove a call."));
+        QMessageBox::warning(this, PROGRAM_NAME, tr("You have to wait a couple of secs to remove a call."));
         return;
     } else {
         m_lock = true;
@@ -157,7 +182,8 @@ void MainWindow::removeCall()
     }
 
     --m_calls;
-    setLabel();
+    setLabel(false, "Last removed");
+    m_chart->setValue(dayOfWeek() - 1, m_calls);
 }
 
 void MainWindow::saveCalls()
@@ -185,58 +211,39 @@ void MainWindow::saveCalls()
     m_db.close();
 
     if (sender() == m_ui->saveButton) {
-        QMessageBox::information(this, tr("Information"), tr("Calls have been saved."));
+        QMessageBox::information(this, PROGRAM_NAME, tr("Calls have been saved."));
     }
 
     m_saverTimer.start();
-}
-
-QPixmap MainWindow::takeScreenShot()
-{
-    QRect rect { geometry() };
-    int x { rect.x() };
-    int y { rect.y() };
-    int width { rect.width() };
-    int height { rect.height() };
-    QScreen* s { screen() };
-    QPixmap pixmap { s->grabWindow(0, x, y, width, height) };
-    return pixmap;
-}
-
-void MainWindow::saveScreenShot()
-{
-    auto filename { QFileDialog::getSaveFileName(this, tr("Save screenshot"), tr("Images (*.png *.jpg *.jpeg)")) };
-    if (filename.isEmpty()) {
-        QMessageBox::warning(this, tr("Warning"), tr("Not saving screenshot."));
-        return;
-    }
-
-    if (not filename.endsWith(".png") and not filename.endsWith(".jpg") and not filename.endsWith(".jpeg"))
-        filename += ".png";
-
-    if (QFile file(filename); file.exists()) {
-        auto answer = QMessageBox::question(this, tr("Confirm"), tr("File %1 exists. Do you want to overload it?").arg(filename));
-        if (answer != QMessageBox::Yes)
-            return;
-    }
-
-    auto pixmap { takeScreenShot() };
-    pixmap.save(filename, "PNG");
-    QMessageBox::information(this, tr("Information"), tr("Screenshot saved."));
+    auto time { QDateTime::currentDateTime().toString("hh:mm:ss") };
+    m_ui->lastSavedLabel->setText(tr("Last saved at %1").arg(time));
 }
 
 void MainWindow::setRemainingTimeLabel()
 {
-    int milliseconds { m_saverTimer.remainingTime() };
-    QString minutes;
+    auto milliseconds { m_saverTimer.remainingTime() };
+    auto seconds { milliseconds / 1'000 };
+    auto minutes { seconds / 60 };
+    seconds %= 60;
 
-    {
-        int s = milliseconds / 1'000;
-        int m = s / 60;
-        minutes = QString::number(m);
+    QString label = "Saving calls";
+    if (minutes != 0 or seconds != 0) {
+        label += " on ";
+        if (minutes != 0)
+            label += tr("%1 minute%2%3 ").arg(QString::number(minutes),
+                                              (minutes == 1 ? "" : "s"), (seconds == 0 ? "" : ","));
+        if (seconds != 0)
+            label += tr("%1 second%2").arg(QString::number(seconds),
+                                                 (seconds == 1 ? "." : "s."));
+    } else {
+        label += "...";
     }
 
-    auto label { tr("Saving calls on %1 minute%2").arg(minutes, (minutes == "1" ? "." : "s.")) };
     m_ui->remainingTimeLabel->setText(label);
     m_saverTimer1s.start();
+}
+
+void MainWindow::updateHoveredLabel(const QString& label)
+{
+    m_ui->currentBarSetValue->setText(label);
 }

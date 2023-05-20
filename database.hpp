@@ -2,6 +2,7 @@
 #define DATABASE_H
 
 #include <QDir>
+#include <QStandardPaths>
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlRecord>
@@ -22,7 +23,7 @@ public:
     bool open();
     void close();
     bool exec(const QString& statement);
-    int records() const;
+    QSqlQuery& query();
     QSqlRecord record();
     QVariant value(int index) const;
 signals:

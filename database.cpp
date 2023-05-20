@@ -18,11 +18,11 @@ Database::~Database()
 
 void Database::setDBEnvironmentUp()
 {
-    auto parentDir = QString("%1%2%3%4%5").arg(QDir::homePath(), QDir::separator(),
-                                               "Documents", QDir::separator(), "CallsCounter");
+    auto actualDir { QStandardPaths::displayName(QStandardPaths::StandardLocation::DocumentsLocation) };
+    auto parentDir = QString("%1%2%3%4%5").arg(QDir::homePath(), QDir::separator(), actualDir, QDir::separator(), PROGRAM_NAME);
     auto fullPath = QString("%1%2%3").arg(parentDir, QDir::separator(), "calls.sqlite3");
-    QDir dir(parentDir);
-    if (not dir.exists(parentDir)) {
+
+    if (QDir dir(parentDir); not dir.exists()) {
         dir.mkdir(parentDir);
     }
 
@@ -75,9 +75,9 @@ bool Database::exec(const QString& statement)
     return result;
 }
 
-int Database::records() const
+QSqlQuery& Database::query()
 {
-    return m_query.size();
+    return m_query;
 }
 
 QSqlRecord Database::record()
