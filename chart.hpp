@@ -7,13 +7,16 @@
 #include <QChart>
 #include <QChartView>
 #include <QDate>
+#include <QEventLoop>
 #include <QIcon>
+#include <QMap>
 #include <QPainter>
 #include <QStringList>
 #include <QSqlRecord>
 #include <QValueAxis>
 #include <QWidget>
 
+#include "calldetails.hpp"
 #include "database.hpp"
 
 namespace Ui { class Chart; }
@@ -31,6 +34,7 @@ class Chart : public QChartView
     QBarSet m_set;
     QStringList m_categories;
     Database& m_db;
+    QMap<quint8, QString> m_dates;
 
     void setValues();
 public:
@@ -42,6 +46,7 @@ signals:
     void updateHoveredLabel(const QString& label);
 private slots:
     void hovered(bool status, int index);
+    void clicked(int index);
 };
 
 #endif // CHART_HPP

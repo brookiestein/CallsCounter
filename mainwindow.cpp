@@ -4,7 +4,7 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_ui(new Ui::MainWindow)
-    , m_calls(0)
+    , m_totalCalls(0)
     , m_db()
     , m_lock(false)
 {
@@ -36,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
     setTodaysCalls();
 
 #ifdef QT_DEBUG
-    m_lockerTimer.setInterval(500);
+    m_lockerTimer.setInterval(100);
 #else
     m_lockerTimer.setInterval(3'000);
 #endif
@@ -60,7 +60,7 @@ MainWindow::~MainWindow()
 void MainWindow::setLabel(bool justMessageLabel, const QString& prefix = "")
 {
     m_ui->messageLabel->setText(tr("You've registered %1 %2 today.")
-                                    .arg(QString::number(m_calls), m_calls == 1 ? tr("call") : tr("calls")));
+                                    .arg(QString::number(m_totalCalls), m_totalCalls == 1 ? tr("call") : tr("calls")));
 
     if (not justMessageLabel) {
         auto time { QDateTime::currentDateTime().toString("hh:mm:ss") };
@@ -81,9 +81,7 @@ void MainWindow::setTodaysCalls()
 {
     if (not m_db.open())
         return;
-    // shouldUpdate() will help us because it checks if there's at least one record in the database.
-    // If there aren't any, we'll get 'not positioned on a valid record' error message, so to avoid this:
-    if (not shouldUpdate()) {
+    if (not isDBEmpty()) {
         m_db.close();
         setLabel(true);
         return;
@@ -97,11 +95,9 @@ void MainWindow::setTodaysCalls()
 
     auto record { m_db.record() };
     int index { record.indexOf("calls") };
-    m_calls = m_db.value(index).toInt();
-    if (m_calls == -1)
-        m_calls = 0;
-    else
-        m_chart->setValue(dayOfWeek(), m_calls);
+    m_totalCalls = m_db.value(index).toInt();
+    if (m_totalCalls == -1)
+        m_totalCalls = 0;
 
     setLabel(true);
     m_db.close();
@@ -112,7 +108,7 @@ void MainWindow::error(const QString& message)
     QMessageBox::critical(this, PROGRAM_NAME, message);
 }
 
-bool MainWindow::shouldUpdate()
+bool MainWindow::isDBEmpty()
 {
     auto statement = QString("SELECT COUNT(id) AS fields FROM Calls WHERE username='%1' AND date='%2'")
                          .arg(m_username, m_datetime);
@@ -140,7 +136,7 @@ void MainWindow::about(bool checked)
 <a href=\"%3\">This software</a><br>\
 <a href=\"%4\">Other projects</a>").arg(VERSION, AUTHOR, THIS_PROGRAM_URL, OTHER_PROJECTS);
     QMessageBox msgBox(this);
-    msgBox.setWindowTitle(PROGRAM_NAME);
+    msgBox.setWindowTitle(tr("About"));
     msgBox.setTextFormat(Qt::RichText);
     msgBox.setText(message);
     msgBox.exec();
@@ -161,9 +157,12 @@ void MainWindow::newCall()
         m_lockerTimer.start();
     }
 
-    ++m_calls;
+    ++m_totalCalls;
+    m_calls[m_totalCalls] = QTime::currentTime().toString("hh:mm:ss");
+    m_notSavedCalls[m_totalCalls] = m_calls[m_totalCalls];
     setLabel(false, "Last registered");
-    m_chart->setValue(dayOfWeek() - 1, m_calls);
+    m_chart->setValue(dayOfWeek() - 1, m_totalCalls);
+    m_modified = true;
 }
 
 void MainWindow::removeCall()
@@ -176,38 +175,41 @@ void MainWindow::removeCall()
         m_lockerTimer.start();
     }
 
-    if (m_calls == 0) {
+    if (m_totalCalls == 0) {
         error(tr("Registered calls cannot be below zero."));
         return;
     }
 
-    --m_calls;
+    m_calls.remove(m_totalCalls);
+    m_notSavedCalls[m_totalCalls] = m_calls[m_totalCalls];
+    --m_totalCalls;
     setLabel(false, "Last removed");
-    m_chart->setValue(dayOfWeek() - 1, m_calls);
+    m_chart->setValue(dayOfWeek() - 1, m_totalCalls);
+    m_modified = true;
 }
 
 void MainWindow::saveCalls()
 {
+    if (not m_modified and not sender())
+        return;
     if (not m_db.open())
         return;
 
-    bool update { shouldUpdate() };
     QString statement;
 
-    if (update) {
-        // I prefer to use the id in the WHERE clause, but we have no problem since date cannot be duplicated.
-        statement = QString("UPDATE Calls SET calls='%1' WHERE date='%2' AND username='%3'")
-                        .arg(QString::number(m_calls), m_datetime, m_username);
-    } else {
-        statement = QString("INSERT INTO Calls (calls, date, username) VALUES ('%1', '%2', '%3')")
-                        .arg(QString::number(m_calls), m_datetime, m_username);
+    for (const int call : m_notSavedCalls.keys()) {
+        auto time { m_notSavedCalls[call] };
+        statement = QString("INSERT INTO Calls (calls, date, time, username) VALUES ('%1', '%2', '%3', '%4')")
+                        .arg(QString::number(call), m_datetime, time, m_username);
+        if (not m_db.exec(statement)) {
+            error(tr("Couldn't execute statement."));
+            error(m_db.query().lastError().text());
+            m_db.close();
+            return;
+        }
     }
 
-    if (not m_db.exec(statement)) {
-        m_db.close();
-        return;
-    }
-
+    m_notSavedCalls.clear();
     m_db.close();
 
     if (sender() == m_ui->saveButton) {
@@ -217,6 +219,7 @@ void MainWindow::saveCalls()
     m_saverTimer.start();
     auto time { QDateTime::currentDateTime().toString("hh:mm:ss") };
     m_ui->lastSavedLabel->setText(tr("Last saved at %1").arg(time));
+    m_modified = false;
 }
 
 void MainWindow::setRemainingTimeLabel()

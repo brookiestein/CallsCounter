@@ -84,9 +84,9 @@
    <widget class="QLabel" name="datetimeLabel">
     <property name="geometry">
      <rect>
-      <x>760</x>
+      <x>740</x>
       <y>0</y>
-      <width>181</width>
+      <width>201</width>
       <height>31</height>
      </rect>
     </property>

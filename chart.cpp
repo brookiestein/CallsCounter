@@ -38,6 +38,7 @@ Chart::Chart(Database& db, const QString& username, QWidget* parent) :
     setRenderHint(QPainter::Antialiasing);
 
     connect(&m_set, &QBarSet::hovered, this, &Chart::hovered);
+    connect(&m_set, &QBarSet::clicked, this, &Chart::clicked);
 }
 
 Chart::~Chart()
@@ -53,52 +54,38 @@ void Chart::setValues()
     }
 
     QDate currentDate { QDate::currentDate() };
-    auto today { currentDate.toString("dd-MM-yyyy") };
-    auto oneWeekBefore { currentDate.addDays(-7).toString("dd-MM-yyyy") };
-    auto statement = QString("SELECT calls, date FROM Calls WHERE date BETWEEN '%1' AND '%2'").arg(oneWeekBefore, today);
-    if (not m_db.exec(statement)) {
-        m_db.close();
-        emit error(tr("[%1]: Couldn't execute statement.").arg(Q_FUNC_INFO));
-        return;
-    }
-
-    auto& query { m_db.query() };
-    auto record { query.record() };
-    int callsID { record.indexOf("calls") };
-    int dateID { record.indexOf("date") };
-
-    //: If we're starting the week, don't show any other day.
-    if (query.first()) {
-        int day { currentDate.dayOfWeek() };
-        if (day == 1) {
-            int calls {};
-            int dbDay { QDate::fromString(query.value(dateID).toString()).dayOfWeek() };
-            do {
-                calls = query.value(callsID).toInt();
-            } while (day != dbDay);
-            m_set << calls;
-            m_db.close();
-            return;
-        }
-    } else { // Nothing else to do.
-        return;
-    }
+    int dayOfWeek { currentDate.dayOfWeek() };
+    // We're going to iterate until daysToSubstract gets to -1.
+    // We want to start adding calls from Monday (0) to today.
+    int daysToSubstract { dayOfWeek - 1 };
 
     for (int i {}; i < 6; ++i)
         m_set << 1;
 
-    query.previous();
-    while (query.next()) {
-        auto dateStr { query.value(dateID).toString() };
-        auto date { QDate::fromString(dateStr, "dd-MM-yyyy") };
-        int index { date.dayOfWeek() };
+    while (daysToSubstract != -1) {
+        auto date { currentDate.addDays(-daysToSubstract).toString("dd-MM-yyyy") };
+        auto statement = QString("SELECT MAX(calls) AS calls FROM Calls WHERE date = '%1'").arg(date);
+        if (not m_db.exec(statement)) {
+            qCritical() << "Couldn't execute statement:" << statement;
+            if (daysToSubstract == 0) {
+                break;
+            } else {
+                --daysToSubstract;
+                continue;
+            }
+        }
 
-        int calls { query.value(callsID).toInt() };
-        qDebug() << tr("Setting barset #%1 to %2.").arg(QString::number(index - 1), QString::number(calls));
-        //: If we're in the same day of week, but it isn't actually today, don't show that set until we setValue().
-        if (date.dayOfWeek() == currentDate.dayOfWeek() and date != QDate::currentDate())
-            calls = 0;
+        auto& query { m_db.query() };
+        auto record { query.record() };
+        if (not query.first() and daysToSubstract == 0)
+            break;
+
+        int callsID { record.indexOf("calls") };
+        auto calls { query.value(callsID).toInt() };
+
+        int index { dayOfWeek - daysToSubstract-- };
         m_set.replace(index - 1, calls);
+        m_dates[index - 1] = date;
     }
 
     for (int i {}; i < m_set.count(); ++i)
@@ -111,7 +98,7 @@ void Chart::setValues()
 void Chart::setValue(int day, int value)
 {
     m_set.replace(day, value);
-    repaint();
+    update();
 }
 
 void Chart::hovered(bool status, int index)
@@ -144,4 +131,14 @@ void Chart::hovered(bool status, int index)
     }
 
     emit updateHoveredLabel(tr("%1 registered calls on %2.").arg(calls, dayName));
+}
+
+void Chart::clicked(int index)
+{
+    auto datetime { m_dates[index] };
+    CallDetails cd(m_db, datetime);
+    QEventLoop loop;
+    connect(&cd, &CallDetails::closed, &loop, &QEventLoop::quit);
+    cd.show();
+    loop.exec();
 }

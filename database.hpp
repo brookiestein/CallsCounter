@@ -14,6 +14,7 @@ class Database : public QObject
     Q_OBJECT
     QSqlDatabase m_db;
     QSqlQuery m_query;
+    const QString m_dbFilename;
 
     void setDBEnvironmentUp();
     void createDB();

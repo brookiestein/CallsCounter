@@ -2,6 +2,7 @@
 
 Database::Database(QObject *parent)
     : QObject{parent}
+    , m_dbFilename("pm_db.sqlite3")
 {
     m_db = QSqlDatabase::addDatabase("QSQLITE");
     m_query = QSqlQuery(m_db);
@@ -20,7 +21,7 @@ void Database::setDBEnvironmentUp()
 {
     auto actualDir { QStandardPaths::displayName(QStandardPaths::StandardLocation::DocumentsLocation) };
     auto parentDir = QString("%1%2%3%4%5").arg(QDir::homePath(), QDir::separator(), actualDir, QDir::separator(), PROGRAM_NAME);
-    auto fullPath = QString("%1%2%3").arg(parentDir, QDir::separator(), "calls.sqlite3");
+    auto fullPath = QString("%1%2%3").arg(parentDir, QDir::separator(), m_dbFilename);
 
     if (QDir dir(parentDir); not dir.exists()) {
         dir.mkdir(parentDir);
@@ -39,7 +40,8 @@ void Database::createDB()
     QString statement = "CREATE TABLE IF NOT EXISTS Calls (\
 id INTEGER PRIMARY KEY AUTOINCREMENT,\
 calls INTERGER NOT NULL,\
-date DATETIME NOT NULL UNIQUE,\
+date DATETIME NOT NULL,\
+time DATETIME NOT NULL,\
 username TEXT NOT NULL)";
 
     if (not m_query.exec(statement)) {

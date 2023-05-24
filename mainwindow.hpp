@@ -7,13 +7,13 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QMainWindow>
+#include <QMap>
 #include <QMessageBox>
 #include <QPixmap>
 #include <QRect>
 #include <QScreen>
 #include <QStandardPaths>
 #include <QSqlRecord>
-#include <QThread>
 #include <QTime>
 #include <QTimer>
 
@@ -30,7 +30,10 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
     Ui::MainWindow *m_ui;
-    int m_calls;
+    QMap<int, QString> m_calls;
+    QMap<int, QString> m_notSavedCalls;
+    bool m_modified;
+    int m_totalCalls;
     QString m_datetime;
     QString m_username;
     Chart* m_chart;
@@ -44,7 +47,7 @@ class MainWindow : public QMainWindow
     void setLabel(bool justMessageLabel, const QString& prefix);
     void setDateTime();
     void setTodaysCalls();
-    bool shouldUpdate();
+    bool isDBEmpty();
     int dayOfWeek();
 public:
     MainWindow(QWidget* parent = nullptr);
