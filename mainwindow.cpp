@@ -57,6 +57,17 @@ MainWindow::~MainWindow()
     delete m_ui;
 }
 
+void MainWindow::resizeEvent(QResizeEvent* event)
+{
+    static bool firstTime {true};
+    if (firstTime) {
+        firstTime = false;
+        return;
+    }
+
+
+}
+
 void MainWindow::setLabel(bool justMessageLabel, const QString& prefix = "")
 {
     m_ui->messageLabel->setText(tr("You've registered %1 %2 today.")
@@ -246,7 +257,10 @@ void MainWindow::setRemainingTimeLabel()
     m_saverTimer1s.start();
 }
 
-void MainWindow::updateHoveredLabel(const QString& label)
+void MainWindow::updateHoveredLabel(const QString& label, bool isToday)
 {
     m_ui->currentBarSetValue->setText(label);
+    auto font { m_ui->messageLabel->font() };
+    font.setBold(isToday and not label.isEmpty());
+    m_ui->messageLabel->setFont(font);
 }

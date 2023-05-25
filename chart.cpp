@@ -104,33 +104,15 @@ void Chart::setValue(int day, int value)
 void Chart::hovered(bool status, int index)
 {
     if (not status) {
-        emit updateHoveredLabel("");
+        emit updateHoveredLabel("", false);
         return;
     }
 
     auto calls { QString::number(m_set[index]) };
-    QString dayName;
-    switch (index) {
-    case 0:
-        dayName = "Monday";
-        break;
-    case 1:
-        dayName = "Tuesday";
-        break;
-    case 2:
-        dayName = "Wednesday";
-        break;
-    case 3:
-        dayName = "Thursday";
-        break;
-    case 4:
-        dayName = "Friday";
-        break;
-    case 5:
-        dayName = "Saturday";
-    }
-
-    emit updateHoveredLabel(tr("%1 registered calls on %2.").arg(calls, dayName));
+    bool isToday { (index + 1) == QDate::currentDate().dayOfWeek() };
+    auto label = tr("%1 registered call%2%3").arg(calls, (calls == "1" ? " " : "s "),
+                                                    (isToday ? tr("today") : m_categories[index].toStdString().c_str()));
+    emit updateHoveredLabel(label, isToday);
 }
 
 void Chart::clicked(int index)

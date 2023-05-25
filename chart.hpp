@@ -38,12 +38,12 @@ class Chart : public QChartView
 
     void setValues();
 public:
-    explicit Chart(Database& db, const QString& username, QWidget* parent = nullptr);
+    Chart(Database& db, const QString& username, QWidget* parent = nullptr);
     ~Chart();
     void setValue(int day, int value);
 signals:
     void error(const QString& message);
-    void updateHoveredLabel(const QString& label);
+    void updateHoveredLabel(const QString& label, bool isToday);
 private slots:
     void hovered(bool status, int index);
     void clicked(int index);

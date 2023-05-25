@@ -24,17 +24,17 @@
     <rect>
      <x>20</x>
      <y>50</y>
-     <width>641</width>
-     <height>271</height>
+     <width>640</width>
+     <height>270</height>
     </rect>
    </property>
   </widget>
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
-     <x>210</x>
+     <x>240</x>
      <y>20</y>
-     <width>271</width>
+     <width>191</width>
      <height>31</height>
     </rect>
    </property>

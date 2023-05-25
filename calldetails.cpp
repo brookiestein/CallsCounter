@@ -26,16 +26,42 @@ void CallDetails::closeEvent(QCloseEvent* event)
     QWidget::closeEvent(event);
 }
 
+void CallDetails::resizeEvent(QResizeEvent* event)
+{
+    static bool firstTime {true};
+    if (firstTime) {
+        firstTime = false;
+        return;
+    }
+
+    // Difference between window size and tableWidget size.
+    const int widthDiff {40};
+    const int heightDiff {70};
+    // No need to modify label width and height.
+    const int labelWidth {m_ui->label->rect().width()};
+    const int labelHeight {m_ui->label->rect().height()};
+
+    auto newSize {event->size()};
+    const int labelx {newSize.width() / 2 - labelWidth / 2};
+    auto x {20};
+    auto y {50};
+    auto width {newSize.width() - widthDiff};
+    auto height {newSize.height() - heightDiff};
+
+    m_tw->setGeometry(QRect(x, y, width, height));
+    m_ui->label->setGeometry(QRect(labelx, 20, labelWidth, labelHeight));
+}
+
 void CallDetails::prepareTableWidget()
 {
     QStringList headers;
     headers << "Calls" << "Date" << "Time";
 
     m_tw->setColumnCount(headers.size());
-    m_tw->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_tw->setSelectionBehavior(QAbstractItemView::SelectItems);
+    m_tw->setSelectionMode(QAbstractItemView::NoSelection);
     m_tw->setEditTriggers(QTableWidget::NoEditTriggers);
     m_tw->setHorizontalHeaderLabels(headers);
+    m_tw->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 }
 
 void CallDetails::setCalls()

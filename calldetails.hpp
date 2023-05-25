@@ -4,6 +4,8 @@
 #include <QCloseEvent>
 #include <QIcon>
 #include <QMessageBox>
+#include <QRect>
+#include <QResizeEvent>
 #include <QStringList>
 #include <QTableWidget>
 #include <QTableWidgetItem>
@@ -28,6 +30,7 @@ public:
     ~CallDetails();
 protected:
     void closeEvent(QCloseEvent* event);
+    void resizeEvent(QResizeEvent* event);
 signals:
     void closed();
 };
