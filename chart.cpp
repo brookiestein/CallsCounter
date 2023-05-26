@@ -118,7 +118,9 @@ void Chart::hovered(bool status, int index)
 void Chart::clicked(int index)
 {
     auto datetime { m_dates[index] };
-    CallDetails cd(m_db, datetime);
+    bool isToday { (index + 1) == QDate::currentDate().dayOfWeek() };
+    QString dayname { isToday ? tr("Today") : m_categories[index].toStdString().c_str() };
+    CallDetails cd(m_db, datetime, dayname);
     QEventLoop loop;
     connect(&cd, &CallDetails::closed, &loop, &QEventLoop::quit);
     cd.show();

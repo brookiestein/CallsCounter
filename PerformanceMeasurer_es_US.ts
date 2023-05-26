@@ -14,12 +14,17 @@
         <translation>Llamadas Registradas de Hoy</translation>
     </message>
     <message>
-        <location filename="calldetails.cpp" line="70"/>
+        <location filename="calldetails.cpp" line="12"/>
+        <source>%1&apos;s Registered Calls</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="calldetails.cpp" line="73"/>
         <source>Database couldn&apos;t be opened.</source>
         <translation>La base de datos no pudo ser abierta.</translation>
     </message>
     <message>
-        <location filename="calldetails.cpp" line="76"/>
+        <location filename="calldetails.cpp" line="79"/>
         <source>Couldn&apos;t execute statement.</source>
         <translation>No se pudo ejecutar la sentencia SQL.</translation>
     </message>
@@ -82,6 +87,11 @@
     <message>
         <location filename="chart.cpp" line="114"/>
         <source>today</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="chart.cpp" line="122"/>
+        <source>Today</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -196,82 +206,82 @@
         <location filename="mainwindow.ui" line="226"/>
         <location filename="build/debug/PerformanceMeasurer_autogen/include/ui_mainwindow.h" line="121"/>
         <location filename="build/release/PerformanceMeasurer_autogen/include/ui_mainwindow.h" line="121"/>
-        <location filename="mainwindow.cpp" line="148"/>
+        <location filename="mainwindow.cpp" line="254"/>
         <source>About</source>
         <translation>Acerca de</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="29"/>
+        <location filename="mainwindow.cpp" line="46"/>
         <source>User: </source>
         <translation>Usuario: </translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="71"/>
+        <location filename="mainwindow.cpp" line="177"/>
         <source>You&apos;ve registered %1 %2 today.</source>
         <translation>Has registrado %1 %2 hoy.</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="72"/>
+        <location filename="mainwindow.cpp" line="178"/>
         <source>call</source>
         <translation>llamada</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="72"/>
+        <location filename="mainwindow.cpp" line="178"/>
         <source>calls</source>
         <translation>llamadas</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="76"/>
+        <location filename="mainwindow.cpp" line="182"/>
         <source>%1 call at %2</source>
         <translation>%1 llamada a las %2</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="86"/>
+        <location filename="mainwindow.cpp" line="192"/>
         <source>Date: %1, %2 %3</source>
         <translation>Fecha: %1, %2 %3</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="143"/>
+        <location filename="mainwindow.cpp" line="249"/>
         <source>&lt;p&gt;Version: %1&lt;/p&gt;&lt;p&gt;Author: %2&lt;/p&gt;&lt;a href=&quot;%3&quot;&gt;This software&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;%4&quot;&gt;Other projects&lt;/a&gt;</source>
         <translation>&lt;p&gt;Versión: %1&lt;/p&gt;&lt;p&gt;Autor: %2&lt;/p&gt;&lt;a href=&quot;%3&quot;&gt;Este programa&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;%4&quot;&gt;Otros proyectos&lt;/a&gt;</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="162"/>
+        <location filename="mainwindow.cpp" line="268"/>
         <source>You have to wait a couple of secs to register a new call.</source>
         <translation>Debes esperar algunos segundos antes de registrar una nueva llamada.</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="180"/>
+        <location filename="mainwindow.cpp" line="286"/>
         <source>You have to wait a couple of secs to remove a call.</source>
         <translation>Debes esperar algunos segundos antes de eliminar una nueva llamada.</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="188"/>
+        <location filename="mainwindow.cpp" line="294"/>
         <source>Registered calls cannot be below zero.</source>
         <translation>Llamadas registradas no pueden estar por debajo de cero.</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="214"/>
+        <location filename="mainwindow.cpp" line="320"/>
         <source>Couldn&apos;t execute statement.</source>
         <translation>No se pudo ejecutar la sentencia SQL.</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="225"/>
+        <location filename="mainwindow.cpp" line="331"/>
         <source>Calls have been saved.</source>
         <translation>Las llamadas han sido guardadas.</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="230"/>
+        <location filename="mainwindow.cpp" line="336"/>
         <source>Last saved at %1</source>
         <translation>Último guardado a las %1</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="245"/>
+        <location filename="mainwindow.cpp" line="351"/>
         <source>%1 minute%2%3 </source>
         <translation>%1 minuto%2%3 </translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="248"/>
+        <location filename="mainwindow.cpp" line="354"/>
         <source>%1 second%2</source>
         <translation>%1 segundo%2</translation>
     </message>

@@ -22,11 +22,12 @@ class CallDetails : public QWidget
     QTableWidget* m_tw;
     Database& m_db;
     QString m_datetime;
+    QString m_dayname;
 
     void prepareTableWidget();
     void setCalls();
 public:
-    CallDetails(Database& db, const QString& datetime, QWidget* parent = nullptr);
+    CallDetails(Database& db, const QString& datetime, const QString& dayname, QWidget* parent = nullptr);
     ~CallDetails();
 protected:
     void closeEvent(QCloseEvent* event);

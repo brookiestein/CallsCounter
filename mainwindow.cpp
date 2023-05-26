@@ -13,6 +13,23 @@ MainWindow::MainWindow(QWidget *parent)
     m_ui->lastCallLabel->setText("");
     m_ui->currentBarSetValue->setText("");
 
+    initialWindowWidth = this->size().width();
+    initialWindowHeight = this->size().height();
+    initialDatetimeLabelX = m_ui->datetimeLabel->x();
+    initialMessageLabelY = m_ui->messageLabel->y();
+    initialLastSavedLabelY = m_ui->lastSavedLabel->y();
+    initialRemainingTimeLabelY = m_ui->remainingTimeLabel->y();
+    initialLastCallLabelX = m_ui->lastCallLabel->x();
+    initialLastCallLabelY = m_ui->lastCallLabel->y();
+    initialCurrentBarSetValueX = m_ui->currentBarSetValue->x();
+    initialCurrentBarSetValueY = m_ui->currentBarSetValue->y();
+    initialChartWidth = 675; // Hardcoded because we set chart's rect from here.
+    initialChartHeight = 381; // Same.
+    initialChartX = 280;
+    initialChartY = 30;
+    initialSaveButtonX = m_ui->saveButton->x();
+    initialSaveButtonY = m_ui->saveButton->y();
+
     connect(&m_db, &Database::error, this, &MainWindow::error);
     connect(m_ui->actionAbout, &QAction::triggered, this, &MainWindow::about);
     connect(m_ui->newButton, &QPushButton::clicked, this, &MainWindow::newCall);
@@ -29,7 +46,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_ui->usernameLabel->setText(tr("User: ") + m_username);
 
     m_chart = new Chart(m_db, m_username, m_ui->centralwidget);
-    m_chart->setGeometry(QRect(280, 30, 675, 381));
+    m_chart->setGeometry(QRect(initialChartX, initialChartY, initialChartWidth, initialChartHeight));
     connect(m_chart, &Chart::updateHoveredLabel, this, &MainWindow::updateHoveredLabel);
 
     setDateTime();
@@ -59,13 +76,100 @@ MainWindow::~MainWindow()
 
 void MainWindow::resizeEvent(QResizeEvent* event)
 {
+    // Because resizeEvent() gets called when window is first created. Let's leave Qt do its stuff first and then me.
     static bool firstTime {true};
     if (firstTime) {
         firstTime = false;
         return;
     }
 
+    auto newSize {event->size()};
 
+    /*
+     * Some widget's sizes are calculated based on initial parent window width/height - initial actual widget width/height.
+     * So do x and y positions.
+     */
+
+    auto datetimeLabelRect = QRect(
+        newSize.width() - (initialWindowWidth - initialDatetimeLabelX),
+        m_ui->datetimeLabel->y(),
+        m_ui->datetimeLabel->rect().width(),
+        m_ui->datetimeLabel->rect().height()
+    );
+
+    auto messageLabelRect = QRect(
+        m_ui->messageLabel->x(),
+        newSize.height() / 2 - 70,
+        m_ui->messageLabel->rect().width(),
+        m_ui->messageLabel->rect().height()
+    );
+
+    auto newButtonRect = QRect(
+        m_ui->newButton->x(),
+        newSize.height() / 2 - 30, // messageLabel's y + 50.
+        m_ui->newButton->rect().width(),
+        m_ui->newButton->rect().height()
+    );
+
+    auto removeButtonRect = QRect(
+        m_ui->removeButton->x(),
+        newSize.height() / 2 - 30, // messageLabel's y + 50.
+        m_ui->removeButton->rect().width(),
+        m_ui->removeButton->rect().height()
+    );
+
+    auto lastSavedLabelRect = QRect(
+        m_ui->lastSavedLabel->x(),
+        newSize.height() - (initialWindowHeight - initialLastSavedLabelY),
+        m_ui->lastSavedLabel->rect().width(),
+        m_ui->lastSavedLabel->rect().height()
+    );
+
+    auto remainingTimeLabelRect = QRect(
+        m_ui->remainingTimeLabel->x(),
+        newSize.height() - (initialWindowHeight - initialRemainingTimeLabelY),
+        m_ui->remainingTimeLabel->rect().width(),
+        m_ui->remainingTimeLabel->rect().height()
+    );
+
+    auto lastRegisteredCallLabelRect = QRect(
+        newSize.width() - (initialWindowWidth - initialLastCallLabelX),
+        newSize.height() - (initialWindowHeight - initialLastCallLabelY),
+        m_ui->lastCallLabel->rect().width(),
+        m_ui->lastCallLabel->rect().height()
+    );
+
+    auto currentBarSetValueRect = QRect(
+        newSize.width() - (initialWindowWidth - initialCurrentBarSetValueX),
+        newSize.height() - (initialWindowHeight - initialCurrentBarSetValueY),
+        m_ui->currentBarSetValue->rect().width(),
+        m_ui->currentBarSetValue->rect().height()
+    );
+
+    auto chartRect = QRect(
+        initialChartX,
+        initialChartY,
+        newSize.width() - (initialWindowWidth - initialChartWidth),
+        newSize.height() - (initialWindowHeight - initialChartHeight)
+    );
+
+    auto saveButtonRect = QRect(
+        newSize.width() - (initialWindowWidth - initialSaveButtonX),
+        newSize.height() - (initialWindowHeight - initialSaveButtonY),
+        m_ui->saveButton->rect().width(),
+        m_ui->saveButton->rect().height()
+    );
+
+    m_ui->datetimeLabel->setGeometry(datetimeLabelRect);
+    m_ui->messageLabel->setGeometry(messageLabelRect);
+    m_ui->newButton->setGeometry(newButtonRect);
+    m_ui->removeButton->setGeometry(removeButtonRect);
+    m_ui->lastSavedLabel->setGeometry(lastSavedLabelRect);
+    m_ui->remainingTimeLabel->setGeometry(remainingTimeLabelRect);
+    m_ui->lastCallLabel->setGeometry(lastRegisteredCallLabelRect);
+    m_ui->currentBarSetValue->setGeometry(currentBarSetValueRect);
+    m_chart->setGeometry(chartRect);
+    m_ui->saveButton->setGeometry(saveButtonRect);
 }
 
 void MainWindow::setLabel(bool justMessageLabel, const QString& prefix = "")

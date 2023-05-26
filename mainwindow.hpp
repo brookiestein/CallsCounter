@@ -18,8 +18,8 @@
 #include <QTime>
 #include <QTimer>
 
-#include "database.hpp"
 #include "chart.hpp"
+#include "database.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -44,6 +44,24 @@ class MainWindow : public QMainWindow
     QTimer m_datetimeTimer;
     bool m_lock;
     Database m_db;
+
+    // The following variables are helpers to properly resize the window.
+    int initialWindowWidth;
+    int initialWindowHeight;
+    int initialDatetimeLabelX;
+    int initialMessageLabelY;
+    int initialLastSavedLabelY;
+    int initialRemainingTimeLabelY;
+    int initialLastCallLabelX;
+    int initialLastCallLabelY;
+    int initialCurrentBarSetValueX;
+    int initialCurrentBarSetValueY;
+    int initialChartX;
+    int initialChartY;
+    int initialChartWidth;
+    int initialChartHeight;
+    int initialSaveButtonX;
+    int initialSaveButtonY;
 
     void setLabel(bool justMessageLabel, const QString& prefix);
     void setDateTime();

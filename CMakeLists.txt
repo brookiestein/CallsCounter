@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(PerformanceMeasurer VERSION 0.7 LANGUAGES CXX)
+project(PerformanceMeasurer VERSION 0.8 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_definitions(PROGRAM_NAME="PerformanceMeasurer")
-add_compile_definitions(VERSION="0.7")
+add_compile_definitions(VERSION="0.8")
 add_compile_definitions(AUTHOR="Brayan MS")
 add_compile_definitions(THIS_PROGRAM_URL="https://github.com/brookiestein/PerformanceMeasurer")
 add_compile_definitions(OTHER_PROJECTS="https://github.com/brookiestein?tab=repositories")

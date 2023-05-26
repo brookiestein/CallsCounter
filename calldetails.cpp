@@ -1,13 +1,15 @@
 #include "calldetails.hpp"
 #include "ui_calldetails.h"
 
-CallDetails::CallDetails(Database& db, const QString& datetime, QWidget* parent) :
+CallDetails::CallDetails(Database& db, const QString& datetime, const QString& dayname, QWidget* parent) :
     QWidget(parent)
     , m_ui(new Ui::CallDetails)
     , m_db(db)
     , m_datetime(datetime)
+    , m_dayname(dayname)
 {
     m_ui->setupUi(this);
+    this->setWindowTitle(tr("%1's Registered Calls").arg(dayname));
     m_tw = m_ui->tableWidget;
 
     setWindowIcon(QIcon("assets/icon.ico"));
@@ -28,6 +30,7 @@ void CallDetails::closeEvent(QCloseEvent* event)
 
 void CallDetails::resizeEvent(QResizeEvent* event)
 {
+    // Because resizeEvent() gets called when window is first created. Let's leave Qt do its stuff first and then me.
     static bool firstTime {true};
     if (firstTime) {
         firstTime = false;
