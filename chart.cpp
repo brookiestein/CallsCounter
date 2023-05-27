@@ -2,8 +2,8 @@
 #include "ui_chart.h"
 
 Chart::Chart(Database& db, const QString& username, QWidget* parent) :
-    QChartView(parent),
-    m_ui(new Ui::Chart)
+    QChartView(parent)
+    , m_ui(new Ui::Chart)
     , m_db(db)
     , m_username(username)
     , m_series(QBarSeries())
@@ -61,12 +61,12 @@ void Chart::setValues()
 
     for (int i {}; i < 6; ++i)
         m_set << 1;
+    QMap<int, int> calls;
 
     while (daysToSubstract != -1) {
         auto date { currentDate.addDays(-daysToSubstract).toString("dd-MM-yyyy") };
         auto statement = QString("SELECT MAX(calls) AS calls FROM Calls WHERE date = '%1'").arg(date);
         if (not m_db.exec(statement)) {
-            qCritical() << "Couldn't execute statement:" << statement;
             if (daysToSubstract == 0) {
                 break;
             } else {
@@ -81,16 +81,19 @@ void Chart::setValues()
             break;
 
         int callsID { record.indexOf("calls") };
-        auto calls { query.value(callsID).toInt() };
+        auto ncalls { query.value(callsID).toInt() };
 
         int index { dayOfWeek - daysToSubstract-- };
-        m_set.replace(index - 1, calls);
+        calls[index - 1] = ncalls;
+        m_set.replace(index - 1, ncalls);
         m_dates[index - 1] = date;
     }
 
-    for (int i {}; i < m_set.count(); ++i)
-        if (m_set[i] == 1)
+    for (int i {}; i < m_set.count(); ++i) {
+        if (m_set[i] == 1 and calls.key(calls[i]) == 0) {
             m_set.replace(i, 0);
+        }
+    }
 
     m_db.close();
 }
@@ -110,8 +113,11 @@ void Chart::hovered(bool status, int index)
 
     auto calls { QString::number(m_set[index]) };
     bool isToday { (index + 1) == QDate::currentDate().dayOfWeek() };
-    auto label = tr("%1 registered call%2%3").arg(calls, (calls == "1" ? " " : "s "),
-                                                    (isToday ? tr("today") : m_categories[index].toStdString().c_str()));
+    // FIXME: Make this string apropriate to be translated.
+    auto label = tr("%1 registered call(s) today.").arg(calls);
+    if (not isToday) {
+        label.replace(tr("today."), tr("on %1.").arg(m_categories[index]));
+    }
     emit updateHoveredLabel(label, isToday);
 }
 

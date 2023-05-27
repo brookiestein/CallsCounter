@@ -10,6 +10,7 @@ CallDetails::CallDetails(Database& db, const QString& datetime, const QString& d
 {
     m_ui->setupUi(this);
     this->setWindowTitle(tr("%1's Registered Calls").arg(dayname));
+    m_ui->label->setText(this->windowTitle());
     m_tw = m_ui->tableWidget;
 
     setWindowIcon(QIcon("assets/icon.ico"));

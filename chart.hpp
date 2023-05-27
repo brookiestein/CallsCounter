@@ -20,7 +20,6 @@
 #include "database.hpp"
 
 namespace Ui { class Chart; }
-namespace CallsCounter { class Chart; }
 
 class Chart : public QChartView
 {

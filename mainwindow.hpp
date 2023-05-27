@@ -6,6 +6,8 @@
 #include <QDir>
 #include <QFile>
 #include <QFileDialog>
+#include <QKeySequence>
+#include <QLocale>
 #include <QMainWindow>
 #include <QMap>
 #include <QMessageBox>
@@ -25,7 +27,10 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
-namespace CallsCounter { class MainWindow; };
+namespace PerformanceMeasurer
+{
+class MainWindow;
+};
 
 class MainWindow : public QMainWindow
 {
@@ -44,24 +49,8 @@ class MainWindow : public QMainWindow
     QTimer m_datetimeTimer;
     bool m_lock;
     Database m_db;
-
-    // The following variables are helpers to properly resize the window.
-    int initialWindowWidth;
-    int initialWindowHeight;
-    int initialDatetimeLabelX;
-    int initialMessageLabelY;
-    int initialLastSavedLabelY;
-    int initialRemainingTimeLabelY;
-    int initialLastCallLabelX;
-    int initialLastCallLabelY;
-    int initialCurrentBarSetValueX;
-    int initialCurrentBarSetValueY;
-    int initialChartX;
-    int initialChartY;
-    int initialChartWidth;
-    int initialChartHeight;
-    int initialSaveButtonX;
-    int initialSaveButtonY;
+    class Geometry;
+    Geometry* m_geometry;
 
     void setLabel(bool justMessageLabel, const QString& prefix);
     void setDateTime();
@@ -69,7 +58,7 @@ class MainWindow : public QMainWindow
     bool isDBEmpty();
     int dayOfWeek();
 public:
-    MainWindow(QWidget* parent = nullptr);
+    explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 protected:
     void resizeEvent(QResizeEvent* event) override;
@@ -82,6 +71,48 @@ private slots:
     void saveCalls();
     void setRemainingTimeLabel();
     void updateHoveredLabel(const QString& label, bool isToday);
+};
+
+// This class's only purpose is to calculate main window's widgets' geometry
+// when resizeEvent is invoked.
+class MainWindow::Geometry : public QObject
+{
+    Q_OBJECT
+    MainWindow* m_mainWindow;
+    QSize m_size;
+    const int m_initialWindowWidth;
+    const int m_initialWindowHeight;
+    const int m_initialDatetimeLabelX;
+    const int m_initialMessageLabelY;
+    const int m_initialLastSavedLabelY;
+    const int m_initialRemainingTimeLabelY;
+    const int m_initialLastCallLabelX;
+    const int m_initialLastCallLabelY;
+    const int m_initialCurrentBarSetValueX;
+    const int m_initialCurrentBarSetValueY;
+    const int m_initialChartX;
+    const int m_initialChartY;
+    const int m_initialChartWidth;
+    const int m_initialChartHeight;
+    const int m_initialSaveButtonX;
+    const int m_initialSaveButtonY;
+public:
+    Geometry(MainWindow* mainWindow, QObject *parent = nullptr);
+    void setNewSize(QSize size);
+    int initialChartX() const;
+    int initialChartY() const;
+    int initialChartWidth() const;
+    int initialChartHeight() const;
+    QRect datetime() const;
+    QRect messageLabel() const;
+    QRect newButton() const;
+    QRect removeButton() const;
+    QRect lastSaved() const;
+    QRect remainingTime() const;
+    QRect lastRegisteredCall() const;
+    QRect currentBarSetValue() const;
+    QRect chart() const;
+    QRect saveButton() const;
 };
 
 #endif // MAINWINDOW_H

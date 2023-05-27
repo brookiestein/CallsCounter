@@ -1,5 +1,5 @@
 #include "mainwindow.hpp"
-#include "./ui_mainwindow.h"
+#include "ui_mainwindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -9,26 +9,10 @@ MainWindow::MainWindow(QWidget *parent)
     , m_lock(false)
 {
     m_ui->setupUi(this);
+    m_geometry = new Geometry(this);
     m_ui->lastSavedLabel->setText("");
     m_ui->lastCallLabel->setText("");
     m_ui->currentBarSetValue->setText("");
-
-    initialWindowWidth = this->size().width();
-    initialWindowHeight = this->size().height();
-    initialDatetimeLabelX = m_ui->datetimeLabel->x();
-    initialMessageLabelY = m_ui->messageLabel->y();
-    initialLastSavedLabelY = m_ui->lastSavedLabel->y();
-    initialRemainingTimeLabelY = m_ui->remainingTimeLabel->y();
-    initialLastCallLabelX = m_ui->lastCallLabel->x();
-    initialLastCallLabelY = m_ui->lastCallLabel->y();
-    initialCurrentBarSetValueX = m_ui->currentBarSetValue->x();
-    initialCurrentBarSetValueY = m_ui->currentBarSetValue->y();
-    initialChartWidth = 675; // Hardcoded because we set chart's rect from here.
-    initialChartHeight = 381; // Same.
-    initialChartX = 280;
-    initialChartY = 30;
-    initialSaveButtonX = m_ui->saveButton->x();
-    initialSaveButtonY = m_ui->saveButton->y();
 
     connect(&m_db, &Database::error, this, &MainWindow::error);
     connect(m_ui->actionAbout, &QAction::triggered, this, &MainWindow::about);
@@ -46,7 +30,11 @@ MainWindow::MainWindow(QWidget *parent)
     m_ui->usernameLabel->setText(tr("User: ") + m_username);
 
     m_chart = new Chart(m_db, m_username, m_ui->centralwidget);
-    m_chart->setGeometry(QRect(initialChartX, initialChartY, initialChartWidth, initialChartHeight));
+    m_chart->setGeometry(QRect(
+        m_geometry->initialChartX(), m_geometry->initialChartY(),
+        m_geometry->initialChartWidth(), m_geometry->initialChartHeight()
+        )
+    );
     connect(m_chart, &Chart::updateHoveredLabel, this, &MainWindow::updateHoveredLabel);
 
     setDateTime();
@@ -64,14 +52,28 @@ MainWindow::MainWindow(QWidget *parent)
     m_saverTimer.start();
     m_saverTimer1s.start();
 
-    m_ui->newButton->setShortcut(Qt::CTRL | Qt::Key_A);
-    m_ui->removeButton->setShortcut(Qt::CTRL | Qt::Key_R);
-    m_ui->saveButton->setShortcut(Qt::CTRL | Qt::Key_S);
+    QKeySequence newButtonShortcut(Qt::CTRL | Qt::Key_A);
+    QKeySequence removeButtonShortcut;
+    QKeySequence saveButtonShortcut;
+    auto localeName { QLocale::system().name() };
+
+    if (localeName.startsWith("en")) {
+        removeButtonShortcut = QKeySequence(Qt::CTRL | Qt::Key_R);
+        saveButtonShortcut = QKeySequence(Qt::CTRL | Qt::Key_S);
+    } else if (localeName.startsWith("es")) {
+        removeButtonShortcut = QKeySequence(Qt::CTRL | Qt::Key_E);
+        saveButtonShortcut = QKeySequence(Qt::CTRL | Qt::Key_G);
+    }
+
+    m_ui->newButton->setShortcut(newButtonShortcut);
+    m_ui->removeButton->setShortcut(removeButtonShortcut);
+    m_ui->saveButton->setShortcut(saveButtonShortcut);
 }
 
 MainWindow::~MainWindow()
 {
     delete m_ui;
+    delete m_geometry;
 }
 
 void MainWindow::resizeEvent(QResizeEvent* event)
@@ -83,99 +85,24 @@ void MainWindow::resizeEvent(QResizeEvent* event)
         return;
     }
 
-    auto newSize {event->size()};
+    m_geometry->setNewSize(event->size());
 
-    /*
-     * Some widget's sizes are calculated based on initial parent window width/height - initial actual widget width/height.
-     * So do x and y positions.
-     */
-
-    auto datetimeLabelRect = QRect(
-        newSize.width() - (initialWindowWidth - initialDatetimeLabelX),
-        m_ui->datetimeLabel->y(),
-        m_ui->datetimeLabel->rect().width(),
-        m_ui->datetimeLabel->rect().height()
-    );
-
-    auto messageLabelRect = QRect(
-        m_ui->messageLabel->x(),
-        newSize.height() / 2 - 70,
-        m_ui->messageLabel->rect().width(),
-        m_ui->messageLabel->rect().height()
-    );
-
-    auto newButtonRect = QRect(
-        m_ui->newButton->x(),
-        newSize.height() / 2 - 30, // messageLabel's y + 50.
-        m_ui->newButton->rect().width(),
-        m_ui->newButton->rect().height()
-    );
-
-    auto removeButtonRect = QRect(
-        m_ui->removeButton->x(),
-        newSize.height() / 2 - 30, // messageLabel's y + 50.
-        m_ui->removeButton->rect().width(),
-        m_ui->removeButton->rect().height()
-    );
-
-    auto lastSavedLabelRect = QRect(
-        m_ui->lastSavedLabel->x(),
-        newSize.height() - (initialWindowHeight - initialLastSavedLabelY),
-        m_ui->lastSavedLabel->rect().width(),
-        m_ui->lastSavedLabel->rect().height()
-    );
-
-    auto remainingTimeLabelRect = QRect(
-        m_ui->remainingTimeLabel->x(),
-        newSize.height() - (initialWindowHeight - initialRemainingTimeLabelY),
-        m_ui->remainingTimeLabel->rect().width(),
-        m_ui->remainingTimeLabel->rect().height()
-    );
-
-    auto lastRegisteredCallLabelRect = QRect(
-        newSize.width() - (initialWindowWidth - initialLastCallLabelX),
-        newSize.height() - (initialWindowHeight - initialLastCallLabelY),
-        m_ui->lastCallLabel->rect().width(),
-        m_ui->lastCallLabel->rect().height()
-    );
-
-    auto currentBarSetValueRect = QRect(
-        newSize.width() - (initialWindowWidth - initialCurrentBarSetValueX),
-        newSize.height() - (initialWindowHeight - initialCurrentBarSetValueY),
-        m_ui->currentBarSetValue->rect().width(),
-        m_ui->currentBarSetValue->rect().height()
-    );
-
-    auto chartRect = QRect(
-        initialChartX,
-        initialChartY,
-        newSize.width() - (initialWindowWidth - initialChartWidth),
-        newSize.height() - (initialWindowHeight - initialChartHeight)
-    );
-
-    auto saveButtonRect = QRect(
-        newSize.width() - (initialWindowWidth - initialSaveButtonX),
-        newSize.height() - (initialWindowHeight - initialSaveButtonY),
-        m_ui->saveButton->rect().width(),
-        m_ui->saveButton->rect().height()
-    );
-
-    m_ui->datetimeLabel->setGeometry(datetimeLabelRect);
-    m_ui->messageLabel->setGeometry(messageLabelRect);
-    m_ui->newButton->setGeometry(newButtonRect);
-    m_ui->removeButton->setGeometry(removeButtonRect);
-    m_ui->lastSavedLabel->setGeometry(lastSavedLabelRect);
-    m_ui->remainingTimeLabel->setGeometry(remainingTimeLabelRect);
-    m_ui->lastCallLabel->setGeometry(lastRegisteredCallLabelRect);
-    m_ui->currentBarSetValue->setGeometry(currentBarSetValueRect);
-    m_chart->setGeometry(chartRect);
-    m_ui->saveButton->setGeometry(saveButtonRect);
+    m_ui->datetimeLabel->setGeometry(m_geometry->datetime());
+    m_ui->messageLabel->setGeometry(m_geometry->messageLabel());
+    m_ui->newButton->setGeometry(m_geometry->newButton());
+    m_ui->removeButton->setGeometry(m_geometry->removeButton());
+    m_ui->lastSavedLabel->setGeometry(m_geometry->lastSaved());
+    m_ui->remainingTimeLabel->setGeometry(m_geometry->remainingTime());
+    m_ui->lastCallLabel->setGeometry(m_geometry->lastRegisteredCall());
+    m_ui->currentBarSetValue->setGeometry(m_geometry->currentBarSetValue());
+    m_chart->setGeometry(m_geometry->chart());
+    m_ui->saveButton->setGeometry(m_geometry->saveButton());
 }
 
 void MainWindow::setLabel(bool justMessageLabel, const QString& prefix = "")
 {
-    m_ui->messageLabel->setText(tr("You've registered %1 %2 today.")
-                                    .arg(QString::number(m_totalCalls), m_totalCalls == 1 ? tr("call") : tr("calls")));
+    m_ui->messageLabel->setText(tr("You've registered %1 call%2today.")
+                                    .arg(QString::number(m_totalCalls), (m_totalCalls == 1 ? " " : "s ")));
 
     if (not justMessageLabel) {
         auto time { QDateTime::currentDateTime().toString("hh:mm:ss") };
@@ -275,7 +202,7 @@ void MainWindow::newCall()
     ++m_totalCalls;
     m_calls[m_totalCalls] = QTime::currentTime().toString("hh:mm:ss");
     m_notSavedCalls[m_totalCalls] = m_calls[m_totalCalls];
-    setLabel(false, "Last registered");
+    setLabel(false, tr("Last registered"));
     m_chart->setValue(dayOfWeek() - 1, m_totalCalls);
     m_modified = true;
 }
@@ -298,7 +225,7 @@ void MainWindow::removeCall()
     m_calls.remove(m_totalCalls);
     m_notSavedCalls[m_totalCalls] = m_calls[m_totalCalls];
     --m_totalCalls;
-    setLabel(false, "Last removed");
+    setLabel(false, tr("Last removed"));
     m_chart->setValue(dayOfWeek() - 1, m_totalCalls);
     m_modified = true;
 }
@@ -312,10 +239,10 @@ void MainWindow::saveCalls()
 
     QString statement;
 
-    for (const int call : m_notSavedCalls.keys()) {
-        auto time { m_notSavedCalls[call] };
+    for (const auto& time : qAsConst(m_notSavedCalls)) {
+        int calls { m_notSavedCalls.key(time) };
         statement = QString("INSERT INTO Calls (calls, date, time, username) VALUES ('%1', '%2', '%3', '%4')")
-                        .arg(QString::number(call), m_datetime, time, m_username);
+                        .arg(QString::number(calls), m_datetime, time, m_username);
         if (not m_db.exec(statement)) {
             error(tr("Couldn't execute statement."));
             error(m_db.query().lastError().text());
@@ -344,9 +271,9 @@ void MainWindow::setRemainingTimeLabel()
     auto minutes { seconds / 60 };
     seconds %= 60;
 
-    QString label = "Saving calls";
+    auto label = tr("Saving calls");
     if (minutes != 0 or seconds != 0) {
-        label += " on ";
+        label += tr(" on ");
         if (minutes != 0)
             label += tr("%1 minute%2%3 ").arg(QString::number(minutes),
                                               (minutes == 1 ? "" : "s"), (seconds == 0 ? "" : ","));
@@ -367,4 +294,152 @@ void MainWindow::updateHoveredLabel(const QString& label, bool isToday)
     auto font { m_ui->messageLabel->font() };
     font.setBold(isToday and not label.isEmpty());
     m_ui->messageLabel->setFont(font);
+}
+
+// END OF MAINWINDOW DEFINITION
+// BEGINNING OF MainWindow::Geometry definition
+MainWindow::Geometry::Geometry(MainWindow* mainWindow, QObject *parent)
+    : QObject{parent}
+    , m_mainWindow(mainWindow)
+    , m_size(m_mainWindow->size())
+    , m_initialWindowWidth(m_mainWindow->size().width())
+    , m_initialWindowHeight(m_mainWindow->size().height())
+    , m_initialDatetimeLabelX(m_mainWindow->m_ui->datetimeLabel->x())
+    , m_initialMessageLabelY(m_mainWindow->m_ui->messageLabel->y())
+    , m_initialLastSavedLabelY(m_mainWindow->m_ui->lastSavedLabel->y())
+    , m_initialRemainingTimeLabelY(m_mainWindow->m_ui->remainingTimeLabel->y())
+    , m_initialLastCallLabelX(m_mainWindow->m_ui->lastCallLabel->x())
+    , m_initialLastCallLabelY(m_mainWindow->m_ui->lastCallLabel->y())
+    , m_initialCurrentBarSetValueX(m_mainWindow->m_ui->currentBarSetValue->x())
+    , m_initialCurrentBarSetValueY(m_mainWindow->m_ui->currentBarSetValue->y())
+    , m_initialChartX(280)
+    , m_initialChartY(30)
+    , m_initialChartWidth(675)
+    , m_initialChartHeight(381)
+    , m_initialSaveButtonX(m_mainWindow->m_ui->saveButton->x())
+    , m_initialSaveButtonY(m_mainWindow->m_ui->saveButton->y())
+{
+}
+
+void MainWindow::Geometry::setNewSize(QSize size)
+{
+    m_size = size;
+}
+
+int MainWindow::Geometry::initialChartX() const
+{
+    return m_initialChartX;
+}
+int MainWindow::Geometry::initialChartY() const
+{
+    return m_initialChartY;
+}
+
+int MainWindow::Geometry::initialChartWidth() const
+{
+    return m_initialChartWidth;
+}
+int MainWindow::Geometry::initialChartHeight() const
+{
+    return m_initialChartHeight;
+}
+
+QRect MainWindow::Geometry::datetime() const
+{
+    return QRect(
+        m_size.width() - (m_initialWindowWidth - m_initialDatetimeLabelX),
+        m_mainWindow->m_ui->datetimeLabel->y(),
+        m_mainWindow->m_ui->datetimeLabel->rect().width(),
+        m_mainWindow->m_ui->datetimeLabel->rect().height()
+        );
+}
+
+QRect MainWindow::Geometry::messageLabel() const
+{
+    return QRect(
+        m_mainWindow->m_ui->messageLabel->x(),
+        m_size.height() / 2 - 70,
+        m_mainWindow->m_ui->messageLabel->rect().width(),
+        m_mainWindow->m_ui->messageLabel->rect().height()
+        );
+}
+
+QRect MainWindow::Geometry::newButton() const
+{
+    return QRect(
+        m_mainWindow->m_ui->newButton->x(),
+        m_size.height() / 2 - 30, // messageLabel's y + 50.
+        m_mainWindow->m_ui->newButton->rect().width(),
+        m_mainWindow->m_ui->newButton->rect().height()
+        );
+}
+
+QRect MainWindow::Geometry::removeButton() const
+{
+    return QRect(
+        m_mainWindow->m_ui->removeButton->x(),
+        m_size.height() / 2 - 30, // messageLabel's y + 50.
+        m_mainWindow->m_ui->removeButton->rect().width(),
+        m_mainWindow->m_ui->removeButton->rect().height()
+        );
+}
+
+QRect MainWindow::Geometry::lastSaved() const
+{
+    return QRect(
+        m_mainWindow->m_ui->lastSavedLabel->x(),
+        m_size.height() - (m_initialWindowHeight - m_initialLastSavedLabelY),
+        m_mainWindow->m_ui->lastSavedLabel->rect().width(),
+        m_mainWindow->m_ui->lastSavedLabel->rect().height()
+        );
+}
+
+QRect MainWindow::Geometry::remainingTime() const
+{
+    return QRect(
+        m_mainWindow->m_ui->remainingTimeLabel->x(),
+        m_size.height() - (m_initialWindowHeight - m_initialRemainingTimeLabelY),
+        m_mainWindow->m_ui->remainingTimeLabel->rect().width(),
+        m_mainWindow->m_ui->remainingTimeLabel->rect().height()
+        );
+}
+
+QRect MainWindow::Geometry::lastRegisteredCall() const
+{
+    return QRect(
+        m_size.width() - (m_initialWindowWidth - m_initialLastCallLabelX),
+        m_size.height() - (m_initialWindowHeight - m_initialLastCallLabelY),
+        m_mainWindow->m_ui->lastCallLabel->rect().width(),
+        m_mainWindow->m_ui->lastCallLabel->rect().height()
+        );
+}
+
+QRect MainWindow::Geometry::currentBarSetValue() const
+{
+    return QRect(
+        m_size.width() - (m_initialWindowWidth - m_initialCurrentBarSetValueX),
+        m_size.height() - (m_initialWindowHeight - m_initialCurrentBarSetValueY),
+        m_mainWindow->m_ui->currentBarSetValue->rect().width(),
+        m_mainWindow->m_ui->currentBarSetValue->rect().height()
+        );
+}
+
+QRect MainWindow::Geometry::chart() const
+{
+    return QRect(
+        m_initialChartX,
+        m_initialChartY,
+        m_size.width() - (m_initialWindowWidth - m_initialChartWidth),
+        m_size.height() - (m_initialWindowHeight - m_initialChartHeight)
+        );
+}
+
+QRect MainWindow::Geometry::saveButton() const
+{
+    return QRect(
+        m_size.width() - (m_initialWindowWidth - m_initialSaveButtonX),
+        m_size.height() - (m_initialWindowHeight - m_initialSaveButtonY),
+        m_mainWindow->m_ui->saveButton->rect().width(),
+        m_mainWindow->m_ui->saveButton->rect().height()
+        );
 }

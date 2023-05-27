@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(PerformanceMeasurer VERSION 0.8 LANGUAGES CXX)
+project(PerformanceMeasurer VERSION 1.0 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_definitions(PROGRAM_NAME="PerformanceMeasurer")
-add_compile_definitions(VERSION="0.8")
+add_compile_definitions(VERSION="1.0")
 add_compile_definitions(AUTHOR="Brayan MS")
 add_compile_definitions(THIS_PROGRAM_URL="https://github.com/brookiestein/PerformanceMeasurer")
 add_compile_definitions(OTHER_PROJECTS="https://github.com/brookiestein?tab=repositories")
@@ -18,22 +18,24 @@ add_compile_definitions(OTHER_PROJECTS="https://github.com/brookiestein?tab=repo
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Sql Charts)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Sql Charts)
 
-set(TS_FILES PerformanceMeasurer_es_US.ts)
+set(TS_FILES translations/PerformanceMeasurer_es_ES.ts
+             translations/PerformanceMeasurer_es_DO.ts
+             translations/PerformanceMeasurer_es_US.ts)
 qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 
 set(PROJECT_SOURCES
+        chart.hpp
+        calldetails.hpp
+        database.hpp
+        mainwindow.hpp
+        chart.cpp
+        calldetails.cpp
+        database.cpp
         main.cpp
         mainwindow.cpp
-        mainwindow.hpp
-        mainwindow.ui
-        database.hpp
-        database.cpp
-        chart.hpp
-        chart.cpp
         chart.ui
-        calldetails.hpp
-        calldetails.cpp
         calldetails.ui
+        mainwindow.ui
         ${TS_FILES}
 )
 
