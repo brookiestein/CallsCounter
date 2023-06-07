@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/resources">
+        <file>assets/icon.ico</file>
+        <file>translations/PerformanceMeasurer_es_DO.ts</file>
+        <file>translations/PerformanceMeasurer_es_ES.ts</file>
+        <file>translations/PerformanceMeasurer_es_US.ts</file>
+    </qresource>
+</RCC>

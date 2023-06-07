@@ -9,18 +9,30 @@ CallDetails::CallDetails(Database& db, const QString& datetime, const QString& d
     , m_dayname(dayname)
 {
     m_ui->setupUi(this);
+    m_geometry = new Geometry(this);
     this->setWindowTitle(tr("%1's Registered Calls").arg(dayname));
     m_ui->label->setText(this->windowTitle());
     m_tw = m_ui->tableWidget;
 
-    setWindowIcon(QIcon("assets/icon.ico"));
     prepareTableWidget();
     setCalls();
+
+    if (QDate::fromString(datetime, "dd-MM-yyyy") == QDate::currentDate()) {
+        connect(m_ui->updateButton, &QPushButton::clicked, this, &CallDetails::setCalls);
+        // Shortcut depends on current locale. English and Spanish are the only ones currently supported.
+        QKeySequence keySequence(QLocale::system().name().startsWith("en") ? (Qt::CTRL | Qt::Key_U) : (Qt::CTRL | Qt::Key_A));
+        m_ui->updateButton->setShortcut(keySequence);
+    } else {
+        // It has no sense to ask the DB for up to date information if it's not today,
+        // because other days will never get updated.
+        m_ui->updateButton->hide();
+    }
 }
 
 CallDetails::~CallDetails()
 {
     delete m_ui;
+    delete m_geometry;
 }
 
 void CallDetails::closeEvent(QCloseEvent* event)
@@ -38,28 +50,17 @@ void CallDetails::resizeEvent(QResizeEvent* event)
         return;
     }
 
-    // Difference between window size and tableWidget size.
-    const int widthDiff {40};
-    const int heightDiff {70};
-    // No need to modify label width and height.
-    const int labelWidth {m_ui->label->rect().width()};
-    const int labelHeight {m_ui->label->rect().height()};
-
-    auto newSize {event->size()};
-    const int labelx {newSize.width() / 2 - labelWidth / 2};
-    auto x {20};
-    auto y {50};
-    auto width {newSize.width() - widthDiff};
-    auto height {newSize.height() - heightDiff};
-
-    m_tw->setGeometry(QRect(x, y, width, height));
-    m_ui->label->setGeometry(QRect(labelx, 20, labelWidth, labelHeight));
+    m_geometry->setSize(event->size());
+    m_ui->label->setGeometry(m_geometry->label());
+    if (not m_ui->updateButton->isHidden())
+        m_ui->updateButton->setGeometry(m_geometry->updateButton());
+    m_tw->setGeometry(m_geometry->tableWidget());
 }
 
 void CallDetails::prepareTableWidget()
 {
     QStringList headers;
-    headers << "Calls" << "Date" << "Time";
+    headers << tr("Calls") << tr("Date") << tr("Time");
 
     m_tw->setColumnCount(headers.size());
     m_tw->setSelectionMode(QAbstractItemView::NoSelection);
@@ -88,10 +89,16 @@ void CallDetails::setCalls()
     int callsID { record.indexOf("calls") };
     int timeID { record.indexOf("time") };
 
+    int rowCount { m_tw->rowCount() };
+    if (rowCount > 1) {
+        for (int i {}; i < rowCount; ++i)
+            m_tw->removeRow(0);
+    }
+
     while (query.next()) {
         auto calls { query.value(callsID).toString() };
         auto time { query.value(timeID).toString() };
-        auto rowCount { m_tw->rowCount() };
+        rowCount = m_tw->rowCount();
 
         m_tw->insertRow(rowCount);
         m_tw->setItem(rowCount, 0, new QTableWidgetItem(calls));
@@ -100,4 +107,58 @@ void CallDetails::setCalls()
     }
 
     m_db.close();
+}
+
+CallDetails::Geometry::Geometry(CallDetails* callDetails) : m_callDetails(callDetails)
+    , m_initialWindowWidth(m_callDetails->size().width())
+    , m_initialWindowHeight(m_callDetails->size().height())
+    , m_initialLabelX(m_callDetails->m_ui->label->x())
+    , m_initialLabelY(m_callDetails->m_ui->label->y())
+    , m_initialLabelWidth(m_callDetails->m_ui->label->rect().width())
+    , m_initialLabelHeight(m_callDetails->m_ui->label->rect().height())
+    , m_initialUpdateButtonX(m_callDetails->m_ui->updateButton->x())
+    , m_initialTableWidgetX(m_callDetails->m_ui->tableWidget->x())
+    , m_initialTableWidgetY(m_callDetails->m_ui->tableWidget->y())
+    , m_initialTableWidgetWidth(m_callDetails->m_ui->tableWidget->rect().width())
+    , m_initialTableWidgetHeight(m_callDetails->m_ui->tableWidget->rect().height())
+{
+    m_size = QSize(m_initialWindowWidth, m_initialWindowHeight);
+}
+
+void CallDetails::Geometry::setSize(QSize size)
+{
+    m_size = size;
+}
+
+QRect CallDetails::Geometry::label() const
+{
+    return QRect(
+        m_size.width() / 2 - 120,
+        m_initialLabelY,
+        m_initialLabelWidth,
+        m_initialLabelHeight
+        );
+}
+
+QRect CallDetails::Geometry::updateButton() const
+{
+    int y { m_callDetails->m_ui->updateButton->y() };
+    int width { m_callDetails->m_ui->updateButton->rect().width() };
+    int height { m_callDetails->m_ui->updateButton->rect().height() };
+    return QRect(
+        m_size.width() - (m_initialWindowWidth - m_initialUpdateButtonX),
+        y,
+        width,
+        height
+        );
+}
+
+QRect CallDetails::Geometry::tableWidget() const
+{
+    return QRect(
+        m_initialTableWidgetX,
+        m_initialTableWidgetY,
+        m_size.width() - (m_initialWindowWidth - m_initialTableWidgetWidth),
+        m_size.height() - (m_initialWindowHeight - m_initialTableWidgetHeight)
+        );
 }

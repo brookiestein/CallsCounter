@@ -51,6 +51,22 @@
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
+  <widget class="QPushButton" name="updateButton">
+   <property name="geometry">
+    <rect>
+     <x>580</x>
+     <y>20</y>
+     <width>80</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>CTRL + U</string>
+   </property>
+   <property name="text">
+    <string>Update</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

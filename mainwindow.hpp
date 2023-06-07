@@ -6,6 +6,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileDialog>
+#include <QKeyCombination>
 #include <QKeySequence>
 #include <QLocale>
 #include <QMainWindow>
@@ -20,6 +21,7 @@
 #include <QTime>
 #include <QTimer>
 
+#include "callsfinder.hpp"
 #include "chart.hpp"
 #include "database.hpp"
 
@@ -56,7 +58,8 @@ class MainWindow : public QMainWindow
     void setDateTime();
     void setTodaysCalls();
     bool isDBEmpty();
-    int dayOfWeek();
+    int dayOfWeek() const;
+    bool isLocked(const QString& action);
 public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
@@ -69,6 +72,7 @@ private slots:
     void newCall();
     void removeCall();
     void saveCalls();
+    void oldCalls();
     void setRemainingTimeLabel();
     void updateHoveredLabel(const QString& label, bool isToday);
 };
@@ -94,6 +98,8 @@ class MainWindow::Geometry : public QObject
     const int m_initialChartY;
     const int m_initialChartWidth;
     const int m_initialChartHeight;
+    const int m_initialOldCallsButtonX;
+    const int m_initialOldCallsButtonY;
     const int m_initialSaveButtonX;
     const int m_initialSaveButtonY;
 public:
@@ -112,6 +118,7 @@ public:
     QRect lastRegisteredCall() const;
     QRect currentBarSetValue() const;
     QRect chart() const;
+    QRect oldCallsButton() const;
     QRect saveButton() const;
 };
 

@@ -15,10 +15,12 @@ MainWindow::MainWindow(QWidget *parent)
     m_ui->currentBarSetValue->setText("");
 
     connect(&m_db, &Database::error, this, &MainWindow::error);
+    connect(m_ui->actionAboutQt, &QAction::triggered, this, &MainWindow::about);
     connect(m_ui->actionAbout, &QAction::triggered, this, &MainWindow::about);
     connect(m_ui->newButton, &QPushButton::clicked, this, &MainWindow::newCall);
     connect(m_ui->removeButton, &QPushButton::clicked, this, &MainWindow::removeCall);
     connect(m_ui->saveButton, &QPushButton::clicked, this, &MainWindow::saveCalls);
+    connect(m_ui->oldCallsButton, &QPushButton::clicked, this, &MainWindow::oldCalls);
     connect(&m_saverTimer, &QTimer::timeout, this, &MainWindow::saveCalls);
     connect(&m_saverTimer1s, &QTimer::timeout, this, &MainWindow::setRemainingTimeLabel);
     connect(&m_datetimeTimer, &QTimer::timeout, this, &MainWindow::setDateTime);
@@ -35,6 +37,8 @@ MainWindow::MainWindow(QWidget *parent)
         m_geometry->initialChartWidth(), m_geometry->initialChartHeight()
         )
     );
+    m_chart->setToolTip(tr("You've registered %1 call%2this week.").arg(QString::number(m_chart->totalCalls()),
+                                                                        m_chart->totalCalls() == 1 ? tr(" ") : tr("s ")));
     connect(m_chart, &Chart::updateHoveredLabel, this, &MainWindow::updateHoveredLabel);
 
     setDateTime();
@@ -52,22 +56,24 @@ MainWindow::MainWindow(QWidget *parent)
     m_saverTimer.start();
     m_saverTimer1s.start();
 
-    QKeySequence newButtonShortcut(Qt::CTRL | Qt::Key_A);
-    QKeySequence removeButtonShortcut;
-    QKeySequence saveButtonShortcut;
-    auto localeName { QLocale::system().name() };
+    // Shortcut depends on current locale. English and Spanish are the only ones currently supported. English is the default.
+    // ToolTips for these buttons are properly set in the translations files.
+    QKeyCombination newButton(Qt::CTRL | Qt::Key_A);
+    QKeyCombination removeButton(Qt::CTRL | Qt::Key_R);
+    QKeyCombination oldCallsButton(Qt::CTRL | Qt::Key_F);
+    QKeyCombination saveButton(Qt::CTRL | Qt::Key_S);
+    auto localeName(QLocale::system().name());
 
-    if (localeName.startsWith("en")) {
-        removeButtonShortcut = QKeySequence(Qt::CTRL | Qt::Key_R);
-        saveButtonShortcut = QKeySequence(Qt::CTRL | Qt::Key_S);
-    } else if (localeName.startsWith("es")) {
-        removeButtonShortcut = QKeySequence(Qt::CTRL | Qt::Key_E);
-        saveButtonShortcut = QKeySequence(Qt::CTRL | Qt::Key_G);
+    if (localeName.startsWith("es")) {
+        removeButton = Qt::CTRL | Qt::Key_E;
+        oldCallsButton = Qt::CTRL | Qt::Key_B;
+        saveButton = Qt::CTRL | Qt::Key_G;
     }
 
-    m_ui->newButton->setShortcut(newButtonShortcut);
-    m_ui->removeButton->setShortcut(removeButtonShortcut);
-    m_ui->saveButton->setShortcut(saveButtonShortcut);
+    m_ui->newButton->setShortcut(QKeySequence(newButton));
+    m_ui->removeButton->setShortcut(QKeySequence(removeButton));
+    m_ui->oldCallsButton->setShortcut(QKeySequence(oldCallsButton));
+    m_ui->saveButton->setShortcut(QKeySequence(saveButton));
 }
 
 MainWindow::~MainWindow()
@@ -96,6 +102,7 @@ void MainWindow::resizeEvent(QResizeEvent* event)
     m_ui->lastCallLabel->setGeometry(m_geometry->lastRegisteredCall());
     m_ui->currentBarSetValue->setGeometry(m_geometry->currentBarSetValue());
     m_chart->setGeometry(m_geometry->chart());
+    m_ui->oldCallsButton->setGeometry(m_geometry->oldCallsButton());
     m_ui->saveButton->setGeometry(m_geometry->saveButton());
 }
 
@@ -112,11 +119,11 @@ void MainWindow::setLabel(bool justMessageLabel, const QString& prefix = "")
 
 void MainWindow::setDateTime()
 {
-    auto dt { QDateTime::currentDateTime() };
-    auto day { dt.toString("ddd") };
+    const auto fmt {tr("ddd, dd-MM-yyyy hh:mm:ss")}; // I want abbreviated day name in English, and full day name in Spanish.
+    auto dt {QDateTime::currentDateTime()};
     m_datetime = dt.toString("dd-MM-yyyy");
-    auto time = dt.toString("hh:mm:ss");
-    m_ui->datetimeLabel->setText(tr("Date: %1, %2 %3").arg(day, m_datetime, time));
+    auto datetime {QLocale::system().toString(dt, fmt)};
+    m_ui->datetimeLabel->setText(tr("Date: %1").arg(datetime));
 }
 
 void MainWindow::setTodaysCalls()
@@ -164,7 +171,7 @@ bool MainWindow::isDBEmpty()
     return true;
 }
 
-int MainWindow::dayOfWeek()
+int MainWindow::dayOfWeek() const
 {
     QDate date { QDate::currentDate() };
     return date.dayOfWeek();
@@ -173,6 +180,13 @@ int MainWindow::dayOfWeek()
 void MainWindow::about(bool checked)
 {
     Q_UNUSED(checked);
+
+    // Because this function is used both for about this program as for about Qt.
+    if (sender() == m_ui->actionAboutQt) {
+        QMessageBox::aboutQt(this);
+        return;
+    }
+
     auto message = tr("<p>Version: %1</p>\
 <p>Author: %2</p>\
 <a href=\"%3\">This software</a><br>\
@@ -189,33 +203,39 @@ void MainWindow::unlockNewButton()
     m_lock = false;
 }
 
-void MainWindow::newCall()
+// Returns false if newCall() and/or removeCall() can proceed with their stuff.
+bool MainWindow::isLocked(const QString& action)
 {
     if (m_lock) {
-        QMessageBox::warning(this, PROGRAM_NAME, tr("You have to wait a couple of secs to register a new call."));
-        return;
+        QMessageBox::warning(this, PROGRAM_NAME, tr("You have to wait a couple of secs to %1 a new call.").arg(action));
+        return true;
     } else {
         m_lock = true;
         m_lockerTimer.start();
     }
+
+    return false;
+}
+
+void MainWindow::newCall()
+{
+    if (isLocked(tr("register")))
+        return;
 
     ++m_totalCalls;
     m_calls[m_totalCalls] = QTime::currentTime().toString("hh:mm:ss");
     m_notSavedCalls[m_totalCalls] = m_calls[m_totalCalls];
     setLabel(false, tr("Last registered"));
-    m_chart->setValue(dayOfWeek() - 1, m_totalCalls);
+    m_chart->setValue(dayOfWeek() - 1, m_totalCalls, Chart::Action::Add);
+    m_chart->setToolTip(tr("You've registered %1 call%2this week.").arg(QString::number(m_chart->totalCalls()),
+                                                                        m_chart->totalCalls() == 1 ? tr(" ") : tr("s ")));
     m_modified = true;
 }
 
 void MainWindow::removeCall()
 {
-    if (m_lock) {
-        QMessageBox::warning(this, PROGRAM_NAME, tr("You have to wait a couple of secs to remove a call."));
+    if (isLocked("remove"))
         return;
-    } else {
-        m_lock = true;
-        m_lockerTimer.start();
-    }
 
     if (m_totalCalls == 0) {
         error(tr("Registered calls cannot be below zero."));
@@ -226,7 +246,9 @@ void MainWindow::removeCall()
     m_notSavedCalls[m_totalCalls] = m_calls[m_totalCalls];
     --m_totalCalls;
     setLabel(false, tr("Last removed"));
-    m_chart->setValue(dayOfWeek() - 1, m_totalCalls);
+    m_chart->setValue(dayOfWeek() - 1, m_totalCalls, Chart::Action::Remove);
+    m_chart->setToolTip(tr("You've registered %1 call%2this week.").arg(QString::number(m_chart->totalCalls()),
+                                                                        m_chart->totalCalls() == 1 ? tr(" ") : tr("s ")));
     m_modified = true;
 }
 
@@ -262,6 +284,15 @@ void MainWindow::saveCalls()
     auto time { QDateTime::currentDateTime().toString("hh:mm:ss") };
     m_ui->lastSavedLabel->setText(tr("Last saved at %1").arg(time));
     m_modified = false;
+}
+
+void MainWindow::oldCalls()
+{
+    CallsFinder cf(m_db);
+    QEventLoop loop;
+    connect(&cf, &CallsFinder::closed, &loop, &QEventLoop::quit);
+    cf.show();
+    loop.exec();
 }
 
 void MainWindow::setRemainingTimeLabel()
@@ -316,6 +347,8 @@ MainWindow::Geometry::Geometry(MainWindow* mainWindow, QObject *parent)
     , m_initialChartY(30)
     , m_initialChartWidth(675)
     , m_initialChartHeight(381)
+    , m_initialOldCallsButtonX(m_mainWindow->m_ui->oldCallsButton->x())
+    , m_initialOldCallsButtonY(m_mainWindow->m_ui->oldCallsButton->y())
     , m_initialSaveButtonX(m_mainWindow->m_ui->saveButton->x())
     , m_initialSaveButtonY(m_mainWindow->m_ui->saveButton->y())
 {
@@ -431,6 +464,16 @@ QRect MainWindow::Geometry::chart() const
         m_initialChartY,
         m_size.width() - (m_initialWindowWidth - m_initialChartWidth),
         m_size.height() - (m_initialWindowHeight - m_initialChartHeight)
+        );
+}
+
+QRect MainWindow::Geometry::oldCallsButton() const
+{
+    return QRect(
+        m_size.width() - (m_initialWindowWidth - m_initialOldCallsButtonX),
+        m_size.height() - (m_initialWindowHeight - m_initialOldCallsButtonY),
+        m_mainWindow->m_ui->oldCallsButton->rect().width(),
+        m_mainWindow->m_ui->oldCallsButton->rect().height()
         );
 }
 

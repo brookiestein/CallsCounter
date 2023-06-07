@@ -34,12 +34,15 @@ class Chart : public QChartView
     QStringList m_categories;
     Database& m_db;
     QMap<quint8, QString> m_dates;
+    int m_totalCalls;
 
     void setValues();
 public:
     Chart(Database& db, const QString& username, QWidget* parent = nullptr);
     ~Chart();
-    void setValue(int day, int value);
+    enum class Action { Add, Remove };
+    void setValue(int day, int value, Action action);
+    int totalCalls() const;
 signals:
     void error(const QString& message);
     void updateHoveredLabel(const QString& label, bool isToday);

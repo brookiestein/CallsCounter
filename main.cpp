@@ -1,5 +1,6 @@
 #include <QApplication>
 #include <QIcon>
+#include <QFile>
 #include <QLocale>
 #include <QTranslator>
 
@@ -8,6 +9,7 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    a.setWindowIcon(QIcon(":/resources/assets/icon.ico"));
 
     QTranslator translator;
     const QStringList uiLanguages = QLocale::system().uiLanguages();
@@ -20,7 +22,6 @@ int main(int argc, char *argv[])
     }
 
     MainWindow w;
-    w.setWindowIcon(QIcon("assets/icon.ico"));
     w.show();
     return a.exec();
 }

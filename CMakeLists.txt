@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(PerformanceMeasurer VERSION 1.0 LANGUAGES CXX)
+project(PerformanceMeasurer VERSION 1.1 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_definitions(PROGRAM_NAME="PerformanceMeasurer")
-add_compile_definitions(VERSION="1.0")
+add_compile_definitions(VERSION="1.1")
 add_compile_definitions(AUTHOR="Brayan MS")
 add_compile_definitions(THIS_PROGRAM_URL="https://github.com/brookiestein/PerformanceMeasurer")
 add_compile_definitions(OTHER_PROJECTS="https://github.com/brookiestein?tab=repositories")
@@ -28,14 +28,18 @@ set(PROJECT_SOURCES
         calldetails.hpp
         database.hpp
         mainwindow.hpp
+        callsfinder.hpp
         chart.cpp
         calldetails.cpp
+        callsfinder.cpp
         database.cpp
         main.cpp
         mainwindow.cpp
         chart.ui
         calldetails.ui
+        callsfinder.ui
         mainwindow.ui
+        resources.qrc
         ${TS_FILES}
 )
 
